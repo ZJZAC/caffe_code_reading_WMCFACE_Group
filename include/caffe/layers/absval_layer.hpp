@@ -21,17 +21,18 @@ namespace caffe {
  *   -# @f$ (N \times C \times H \times W) @f$
  *      the computed outputs @f$ y = |x| @f$
  */
-template <typename Dtype>
-class AbsValLayer : public NeuronLayer<Dtype> {
+template <typename Dtype>//泛型
+class AbsValLayer : public NeuronLayer<Dtype> {//神经元，激活函数的相应层
  public:
-  explicit AbsValLayer(const LayerParameter& param)
+  explicit AbsValLayer(const LayerParameter& param)//常量引用 防止修改原始数据
       : NeuronLayer<Dtype>(param) {}
-  virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
+  virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,//Blob 数据传输和流动的基本数据结构
       const vector<Blob<Dtype>*>& top);
 
   virtual inline const char* type() const { return "AbsVal"; }
-  virtual inline int ExactNumBottomBlobs() const { return 1; }
-  virtual inline int ExactNumTopBlobs() const { return 1; }
+  virtual inline int ExactNumBottomBlobs() const { return 1; }//bottom表示输入
+  virtual inline int ExactNumTopBlobs() const { return 1; }//top表示输出
+
 
  protected:
   /// @copydoc AbsValLayer
@@ -58,7 +59,8 @@ class AbsValLayer : public NeuronLayer<Dtype> {
    *      @f$ if propagate_down[0]
    */
   virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
-      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
+      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);//
+  //propagate_down表示是否将其中的全部参数回传
   virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
       const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
 };
