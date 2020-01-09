@@ -274,44 +274,49 @@ class Net {
   void UpdateDebugInfo(const int param_id);
 
   /// @brief The network name
-  string name_;
+  string name_;                                 // 网络的名称
   /// @brief The phase: TRAIN or TEST
-  Phase phase_;
+  Phase phase_;                                 // 网络的字段状态(TRAIN or TEST)
   /// @brief Individual layers in the net
-  vector<shared_ptr<Layer<Dtype> > > layers_;
-  vector<string> layer_names_;
-  map<string, int> layer_names_index_;
-  vector<bool> layer_need_backward_;
+  vector<shared_ptr<Layer<Dtype> > > layers_;   // 网络的各个层,layers_[layer_id]
+  vector<string> layer_names_;                  // 网络的各个层的名称
+  map<string, int> layer_names_index_;          // <layer的名称layer_name, layer在layers_中的索引layer_id>
+  vector<bool> layer_need_backward_;            // 网络的各个层是否需要反向传播
+    
   /// @brief the blobs storing intermediate results between the layer.
-  vector<shared_ptr<Blob<Dtype> > > blobs_;
-  vector<string> blob_names_;
-  map<string, int> blob_names_index_;
-  vector<bool> blob_need_backward_;
+  vector<shared_ptr<Blob<Dtype> > > blobs_;     // 存储网络的所有输出blob,blobs_[blob_id]
+  vector<string> blob_names_;                   // blob_names_[blob_id]为blobs_[blob_id]存储的blob数据的名称
+  map<string, int> blob_names_index_;           // <blob数据的名称blob_name, blob数据在blobs_中的索引blob_id>
+  vector<bool> blob_need_backward_;             // blobs_中的各个数据是否需要反向传播
   /// bottom_vecs stores the vectors containing the input for each layer.
   /// They don't actually host the blobs (blobs_ does), so we simply store
   /// pointers.
-  vector<vector<Blob<Dtype>*> > bottom_vecs_;
-  vector<vector<int> > bottom_id_vecs_;
-  vector<vector<bool> > bottom_need_backward_;
+  vector<vector<Blob<Dtype>*> > bottom_vecs_;   // bottom_vecs_[i][j]为第i层第j个输入blob数据的指针,数据在blobs_中
+  vector<vector<int> > bottom_id_vecs_;         // bottom_id_vecs_[i][j]为第i层第j个输入blob在blobs_中的索引blob_id
+  vector<vector<bool> > bottom_need_backward_;  // bottom_need_backward_[i][j]为第i层第j个输入blob是否需要反传
   /// top_vecs stores the vectors containing the output for each layer
-  vector<vector<Blob<Dtype>*> > top_vecs_;
-  vector<vector<int> > top_id_vecs_;
-  /// Vector of weight in the loss (or objective) function of each net blob,
-  /// indexed by blob_id.
-  vector<Dtype> blob_loss_weights_;
-  vector<vector<int> > param_id_vecs_;
+  vector<vector<Blob<Dtype>*> > top_vecs_;      // top_vecs_[i][j]为第i层第j个输出blob数据的指针,数据在blobs_中
+  vector<vector<int> > top_id_vecs_;            // top_id_vecs_[i][j]为第i层第j个输出blob在blobs_中的索引blob_id
+  /// Vector of weight in the loss (or objective) function of each net blob, indexed by blob_id.
+  vector<Dtype> blob_loss_weights_;             // blobs_[blob_id]对应的loss权重
+    
+  vector<vector<int> > param_id_vecs_;          // param_id_vecs_[i][j]为第i层第j个参数blob在params_中的位置
+  // param_owners_[i]为参数params_[i]的拥有者的id,源参数(参数来源于所在的layer)的值为-1,而共享参数的值为源参数在params_的索引
   vector<int> param_owners_;
+  // param_display_names_[i]为参数params_[i]显示的名称,需共享的参数会设置非一个非空的值,未设置则用参数的id替代
+  //由于AppendParam()中参数名称未设置时会用param_id替代,所以该变量中可能会存在重复的名称.因此该变量不可用于寻找或匹配与共享参数同名的源参数的位置
   vector<string> param_display_names_;
-  vector<pair<int, int> > param_layer_indices_;
+  vector<pair<int, int> > param_layer_indices_; // param_layer_indices_[i]为参数params_[i]在网络中的位置(layer_id, param_id)
+  // <参数名称, 参数在params_的索引>,非空名称的参数只有在首次出现时才会保存在该变量中,后续出现都作为共享参数,所以该变量可用于寻找和匹配共享参数的源参数的位置
   map<string, int> param_names_index_;
   /// blob indices for the input and the output of the net
-  vector<int> net_input_blob_indices_;
-  vector<int> net_output_blob_indices_;
-  vector<Blob<Dtype>*> net_input_blobs_;
-  vector<Blob<Dtype>*> net_output_blobs_;
+  vector<int> net_input_blob_indices_;          // net_input_blob_indices_[i]为网络的数据输入blob在blobs_中的索引
+  vector<int> net_output_blob_indices_;         // net_output_blob_indices_[i]为网络的数据输出blob在blobs_中的索引
+  vector<Blob<Dtype>*> net_input_blobs_;        // 网络的数据输入blob的指针
+  vector<Blob<Dtype>*> net_output_blobs_;       // 网络的数据输出blob的指针(所有未被当作其他层输入的输出blob)
   /// The parameters in the network.
-  vector<shared_ptr<Blob<Dtype> > > params_;
-  vector<Blob<Dtype>*> learnable_params_;
+  vector<shared_ptr<Blob<Dtype> > > params_;    // 网络中的所有参数blob(包括源参数和共享参数)
+  vector<Blob<Dtype>*> learnable_params_;       // 网络中的所有学习参数,只会保存源参数
   /**
    * The mapping from params_ -> learnable_params_: we have
    * learnable_param_ids_.size() == params_.size(),
@@ -319,22 +324,22 @@ class Net {
    * if and only if params_[i] is an "owner"; otherwise, params_[i] is a sharer
    * and learnable_params_[learnable_param_ids_[i]] gives its owner.
    */
-  vector<int> learnable_param_ids_;
+  vector<int> learnable_param_ids_;             // learnable_param_ids_[i]为参数params_[i]在learnable_params_中的索引
   /// the learning rate multipliers for learnable_params_
-  vector<float> params_lr_;
-  vector<bool> has_params_lr_;
+  vector<float> params_lr_;                     // params_lr_[i]为参数learnable_params_[i]的学习率系数
+  vector<bool> has_params_lr_;                  // has_params_lr_[i]为参数learnable_params_[i]是否设置了学习率系数
   /// the weight decay multipliers for learnable_params_
-  vector<float> params_weight_decay_;
-  vector<bool> has_params_decay_;
+  vector<float> params_weight_decay_;           // params_weight_decay_[i]为参数learnable_params_[i]的权重衰减系数
+  vector<bool> has_params_decay_;               // has_params_decay_[i]为参数learnable_params_[i]是否设置了权重衰减系数
   /// The bytes of memory used by this net
-  size_t memory_used_;
+  size_t memory_used_;                          // 网络中所有输出blob的大小之和
   /// Whether to compute and display debug info for the net.
-  bool debug_info_;
+  bool debug_info_;   // 网络是否允许计算并打印调试信息,允许的话则会打印参与前向计算的layer的输出blob和参数blob的数据的绝对值之和的均值
   // Callbacks
-  vector<Callback*> before_forward_;
-  vector<Callback*> after_forward_;
-  vector<Callback*> before_backward_;
-  vector<Callback*> after_backward_;
+  vector<Callback*> before_forward_;            // 网络执行前向计算之前的回调函数
+  vector<Callback*> after_forward_;             // 网络执行前向计算之后的回调函数
+  vector<Callback*> before_backward_;           // 网络执行反向传播之前的回调函数
+  vector<Callback*> after_backward_;            // 网络执行反向传播之后的回调函数
 
 DISABLE_COPY_AND_ASSIGN(Net);
 };
